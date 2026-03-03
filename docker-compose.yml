@@ -1,0 +1,43 @@
+# ============================================================
+# NSFW Content Filter — Docker Compose
+# ============================================================
+
+version: "3.9"
+
+services:
+
+  # ── FastAPI Backend ─────────────────────────────────────
+  api:
+    build:
+      context: .
+      target: api
+    container_name: nsfw-filter-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./checkpoints:/app/checkpoints
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── Streamlit Frontend ──────────────────────────────────
+  frontend:
+    build:
+      context: .
+      target: streamlit
+    container_name: nsfw-filter-ui
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./checkpoints:/app/checkpoints
+    depends_on:
+      - api
+    environment:
+      - PYTHONUNBUFFERED=1
+      - API_URL=http://api:8000
+    restart: unless-stopped

@@ -1,0 +1,40 @@
+# ============================================================
+# NSFW Content Filter Application — Dependencies
+# ============================================================
+
+# --- Deep Learning Framework ---
+torch>=2.0.0
+torchvision>=0.15.0
+
+# --- Web Framework & API ---
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.9
+
+# --- Frontend ---
+streamlit>=1.32.0
+
+# --- Image / Video Processing ---
+opencv-python-headless>=4.9.0
+Pillow>=10.2.0
+
+# --- Data Science & ML Utilities ---
+scikit-learn>=1.4.0
+numpy>=1.26.0
+pandas>=2.2.0
+
+# --- Data Acquisition ---
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+lxml>=5.1.0
+
+# --- Text Processing ---
+nltk>=3.8.0
+onnx
+h5py
+
+# --- Utilities ---
+tqdm>=4.66.0
+pydantic>=2.6.0
+aiofiles>=23.2.0
+tensorflow

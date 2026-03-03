@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environment
+venv/
+.env/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Data & Models (large files)
+data/
+checkpoints/
+# Allow models/checkpoints explicitly
+!models/checkpoints/
+!models/checkpoints/*.pth
+!models/checkpoints/*.pt
+!models/checkpoints/*.onnx
+
+# Ignore other potential model files
+*.pth
+*.pt
+*.onnx
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Temp
+tmp/
+*.tmp
