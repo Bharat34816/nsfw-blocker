@@ -18,6 +18,7 @@ import tempfile
 import time
 from pathlib import Path
 
+from NsfwContentM_main.app import predict_text
 import streamlit as st
 from PIL import Image
 
@@ -436,8 +437,24 @@ with tab_text:
         if text_input and text_input.strip():
             with st.spinner("📝 Analyzing text..."):
                 start = time.time()
-                result = st.session_state.predictor.predict_text(text_input.strip())
+                # Use the new predict_text function
+                clean_text, label, nsfw_score, sfw_score, label_scores = predict_text(text_input.strip())
                 elapsed = (time.time() - start) * 1000
+
+                # Convert to PredictionResult format for UI rendering
+                from inference.predictor import PredictionResult
+                result = PredictionResult(
+                    prediction=label, # "NSFW" or "SFW" (dashboard handles color coding)
+                    confidence=max(nsfw_score, sfw_score),
+                    nsfw_score=nsfw_score,
+                    needs_review=False,
+                    modality="text",
+                    details={
+                        "model": "NSFW-Content-M",
+                        "cleaned_text": clean_text,
+                        "label_scores": label_scores
+                    }
+                )
 
             render_result(result, elapsed)
             add_to_history("📝 Text", result, elapsed)

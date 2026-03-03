@@ -1,0 +1,8 @@
+{
+    "class_labels": {
+        "0": "neutral",
+        "1": "offensive",
+        "2": "hate"
+    },
+    "max_len": 50
+}

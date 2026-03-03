@@ -40,3 +40,5 @@ aiofiles>=23.2.0
 tensorflow
 transformers
 huggingface_hub
+emoji
+ftfy
