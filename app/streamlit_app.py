@@ -290,12 +290,12 @@ with st.sidebar:
 
     st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
     nsfw_thresh = st.slider(
-        "NSFW Threshold",
+        "NSFW Images/Videos Threshold",
         min_value=0.50, max_value=0.99, value=0.85, step=0.01,
         help="Confidence above this → auto-block as NSFW",
     )
     safe_thresh = st.slider(
-        "Safe Threshold",
+        "Safe Images/Videos Threshold",
         min_value=0.01, max_value=0.50, value=0.15, step=0.01,
         help="Confidence below this → auto-approve as Safe",
     )
