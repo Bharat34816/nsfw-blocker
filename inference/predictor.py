@@ -274,9 +274,10 @@ class NSFWPredictor:
         threshold_config: Optional[ThresholdConfig] = None,
         use_pretrained: bool = True,
     ):
-        self.image_model_path = image_model_path or "models/checkpoints/image_model.pth"
-        self.text_model_path = text_model_path or "models/checkpoints/text_model.pth"
-        self.vocab_path = vocab_path or "models/checkpoints/vocabulary.json"
+        project_root = Path(__file__).resolve().parent.parent
+        self.image_model_path = image_model_path or str(project_root / "models/checkpoints/image_model.pth")
+        self.text_model_path = text_model_path or str(project_root / "models/checkpoints/text_model.pth")
+        self.vocab_path = vocab_path or str(project_root / "models/checkpoints/vocabulary.json")
         self.threshold = threshold_config or ThresholdConfig()
         self.use_pretrained = use_pretrained
 
@@ -292,10 +293,10 @@ class NSFWPredictor:
         self._has_custom_image = Path(self.image_model_path).exists()
         self._has_custom_text = Path(self.text_model_path).exists()
 
-        self.external_keras_path = "models/external/text_model.keras"
-        self.external_tokenizer_path = "models/external/tokenizer.pickle"
+        self.external_keras_path = str(project_root / "models/external/text_model.keras")
+        self.external_tokenizer_path = str(project_root / "models/external/tokenizer.pickle")
         if not Path(self.external_tokenizer_path).exists():
-            self.external_tokenizer_path = "models/external/tokenizer.pkl"
+            self.external_tokenizer_path = str(project_root / "models/external/tokenizer.pkl")
         
         self._has_external_text = (
             Path(self.external_keras_path).exists() and 

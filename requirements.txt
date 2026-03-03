@@ -38,3 +38,5 @@ tqdm>=4.66.0
 pydantic>=2.6.0
 aiofiles>=23.2.0
 tensorflow
+transformers
+huggingface_hub
