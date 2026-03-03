@@ -18,13 +18,12 @@ import tempfile
 import time
 from pathlib import Path
 
-from NsfwContentM_main.app import predict_text
-import streamlit as st
-from PIL import Image
-
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from NsfwContentM_main.app import predict_text
+import streamlit as st
+from PIL import Image
 from inference.predictor import NSFWPredictor, ThresholdConfig
 
 # ---------------------------------------------------------------------------
