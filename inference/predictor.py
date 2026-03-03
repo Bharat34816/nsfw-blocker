@@ -274,9 +274,9 @@ class NSFWPredictor:
         threshold_config: Optional[ThresholdConfig] = None,
         use_pretrained: bool = True,
     ):
-        self.image_model_path = image_model_path or "checkpoints/best_image_model.pth"
-        self.text_model_path = text_model_path or "checkpoints/best_text_model.pth"
-        self.vocab_path = vocab_path or "checkpoints/vocabulary.json"
+        self.image_model_path = image_model_path or "models/checkpoints/image_model.pth"
+        self.text_model_path = text_model_path or "models/checkpoints/text_model.pth"
+        self.vocab_path = vocab_path or "models/checkpoints/vocabulary.json"
         self.threshold = threshold_config or ThresholdConfig()
         self.use_pretrained = use_pretrained
 
