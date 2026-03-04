@@ -340,7 +340,11 @@ class NSFWPredictor:
 
         model = EfficientNetB0(num_classes=2)
         checkpoint = torch.load(self.image_model_path, map_location=DEVICE, weights_only=False)
-        model.load_state_dict(checkpoint["model_state_dict"])
+        if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
+            model.load_state_dict(checkpoint["model_state_dict"])
+        else:
+            # Assume direct state dict
+            model.load_state_dict(checkpoint)
         model = model.to(DEVICE)
         model.eval()
         self._custom_image_model = model
@@ -363,7 +367,11 @@ class NSFWPredictor:
 
         model = TextCNN_BiLSTM(vocab_size=len(self._vocab), num_classes=2)
         checkpoint = torch.load(self.text_model_path, map_location=DEVICE, weights_only=False)
-        model.load_state_dict(checkpoint["model_state_dict"])
+        if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
+            model.load_state_dict(checkpoint["model_state_dict"])
+        else:
+            # Assume direct state dict
+            model.load_state_dict(checkpoint)
         model = model.to(DEVICE)
         model.eval()
         self._custom_text_model = model
@@ -433,15 +441,23 @@ class NSFWPredictor:
             image = Image.open(image).convert("RGB")
 
         # Strategy: custom model if available, else pre-trained
+        # FALLBACK: If custom model results in a tie (0.5), use pretrained.
+        nsfw_score = 0.5
         model_info = "untrained"
+
         if self._has_custom_image:
             nsfw_score = self._predict_image_custom(image)
             model_info = "custom-torch"
+            
+            # If custom model returns a perfect tie (likely untrained/reset), fallback to pretrained
+            if abs(nsfw_score - 0.5) < 1e-4 and self.use_pretrained:
+                logger.info("Custom model returned tie (0.5), falling back to pre-trained.")
+                nsfw_score = self._predict_image_pretrained(image)
+                model_info = "pretrained-hf (fallback)"
+        
         elif self.use_pretrained:
             nsfw_score = self._predict_image_pretrained(image)
             model_info = "pretrained-hf"
-        else:
-            nsfw_score = 0.5  # No model available
 
         return self._apply_threshold(nsfw_score, Modality.IMAGE, model_info)
 

@@ -10,6 +10,16 @@ Interactive frontend for testing the NSFW filter:
     - Result history in session state
 """
 
+import streamlit as st
+
+# Must be the first streamlit command
+st.set_page_config(
+    page_title="NSFW Content Filter",
+    page_icon="🛡️",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
 import io
 import json
 import os
@@ -22,20 +32,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from NsfwContentM_main.app import predict_text
-import streamlit as st
 from PIL import Image
 from inference.predictor import NSFWPredictor, ThresholdConfig
-
-# ---------------------------------------------------------------------------
-# Page Configuration
-# ---------------------------------------------------------------------------
-
-st.set_page_config(
-    page_title="NSFW Content Filter",
-    page_icon="🛡️",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
 
 # ---------------------------------------------------------------------------
 # Custom CSS

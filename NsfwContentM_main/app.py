@@ -95,57 +95,58 @@ def predict_text(text):
     return clean, final_label, nsfw_score, sfw_score, label_scores
 
 
-# -----------------------
-# UI
-# -----------------------
-st.set_page_config(page_title="NSFW vs SFW", layout="centered")
+if __name__ == "__main__":
+    # -----------------------
+    # UI
+    # -----------------------
+    st.set_page_config(page_title="NSFW vs SFW", layout="centered")
 
-st.markdown(
-    """
-    <style>
-    .main {
-        background-color: #e3f2fd;
-    }
-    .stButton>button {
-        background: linear-gradient(135deg, #2196f3, #1565c0);
-        color: white;
-        border-radius: 10px;
-        height: 3em;
-        font-size: 16px;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+    st.markdown(
+        """
+        <style>
+        .main {
+            background-color: #e3f2fd;
+        }
+        .stButton>button {
+            background: linear-gradient(135deg, #2196f3, #1565c0);
+            color: white;
+            border-radius: 10px;
+            height: 3em;
+            font-size: 16px;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 
-st.title("🔵 NSFW vs SFW Text Classifier")
-st.write("Analyze text content for safety and moderation.")
+    st.title("🔵 NSFW vs SFW Text Classifier")
+    st.write("Analyze text content for safety and moderation.")
 
-text_input = st.text_area("Enter text here:", height=150)
+    text_input = st.text_area("Enter text here:", height=150)
 
-if st.button("Analyze"):
+    if st.button("Analyze"):
 
-    if text_input.strip() == "":
-        st.warning("Please enter some text.")
-    else:
-        clean, label, nsfw_score, sfw_score, original_scores = predict_text(text_input)
-
-        st.subheader("📊 Prediction Result")
-
-        st.write("**Input:**", text_input)
-        st.write("**Cleaned:**", clean)
-
-        if label == "NSFW":
-            st.error("⚠️ NSFW Content Detected")
+        if text_input.strip() == "":
+            st.warning("Please enter some text.")
         else:
-            st.success("✅ Safe Content (SFW)")
+            clean, label, nsfw_score, sfw_score, original_scores = predict_text(text_input)
 
-        st.write("### Binary Scores")
-        st.progress(float(nsfw_score))
-        st.write(f"NSFW: {nsfw_score:.4f}")
+            st.subheader("📊 Prediction Result")
 
-        st.progress(float(sfw_score))
-        st.write(f"SFW: {sfw_score:.4f}")
+            st.write("**Input:**", text_input)
+            st.write("**Cleaned:**", clean)
 
-        st.write("### Original Class Scores")
-        st.json({k: round(v, 4) for k, v in original_scores.items()})
+            if label == "NSFW":
+                st.error("⚠️ NSFW Content Detected")
+            else:
+                st.success("✅ Safe Content (SFW)")
+
+            st.write("### Binary Scores")
+            st.progress(float(nsfw_score))
+            st.write(f"NSFW: {nsfw_score:.4f}")
+
+            st.progress(float(sfw_score))
+            st.write(f"SFW: {sfw_score:.4f}")
+
+            st.write("### Original Class Scores")
+            st.json({k: round(v, 4) for k, v in original_scores.items()})
