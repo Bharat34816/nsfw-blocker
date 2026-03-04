@@ -32,7 +32,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from NsfwContentM_main.app import predict_text
-from PIL import Image
+from PIL import Image, ImageFilter
 from inference.predictor import NSFWPredictor, ThresholdConfig
 
 # ---------------------------------------------------------------------------
@@ -287,6 +287,15 @@ with st.sidebar:
     st.caption("v1.2.0-Aggressive-Text-Override")
 
     st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
+    st.markdown("#### 👁️ Privacy Settings")
+    reveal_content = st.toggle(
+        "Reveal NSFW content",
+        value=False,
+        help="If disabled, NSFW and Review-flagged images will be blurred.",
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
     nsfw_thresh = st.slider(
         "NSFW Images/Videos Threshold",
         min_value=0.50, max_value=0.99, value=0.85, step=0.01,
@@ -363,18 +372,31 @@ with tab_image:
     )
 
     if uploaded_image is not None:
+        image = Image.open(uploaded_image).convert("RGB")
+        
+        # We need to predict FIRST to decide whether to blur
+        with st.spinner("🔍 Analyzing image..."):
+            start = time.time()
+            result = st.session_state.predictor.predict_image(image)
+            elapsed = (time.time() - start) * 1000
+
         col1, col2 = st.columns([1, 1])
 
         with col1:
-            image = Image.open(uploaded_image).convert("RGB")
-            st.image(image, caption="Uploaded Image", use_column_width=True)
+            display_image = image
+            is_blurred = False
+            
+            # Apply blur if NSFW or REVIEW and not revealed
+            if (result.prediction in ("NSFW", "REVIEW")) and not reveal_content:
+                display_image = image.filter(ImageFilter.GaussianBlur(radius=30))
+                is_blurred = True
+            
+            st.image(display_image, caption="Uploaded Image" + (" (Blurred for privacy)" if is_blurred else ""), use_column_width=True)
+            
+            if is_blurred:
+                st.warning("⚠️ This image has been blurred. Use the 'Reveal NSFW content' toggle in the sidebar to view.")
 
         with col2:
-            with st.spinner("🔍 Analyzing image..."):
-                start = time.time()
-                result = st.session_state.predictor.predict_image(image)
-                elapsed = (time.time() - start) * 1000
-
             render_result(result, elapsed)
             add_to_history("🖼️ Image", result, elapsed)
 
