@@ -512,15 +512,36 @@ class NSFWPredictor:
 
     def predict_video(self, video_path: str) -> PredictionResult:
         """
-        Predict NSFW status for a video.
+        Predict NSFW status for a video dynamically.
         Flags as NSFW if ANY keyframe exceeds threshold.
         """
         if self._video_sampler is None:
             from training.video_sampler import VideoFrameSampler
             self._video_sampler = VideoFrameSampler()
-        keyframes = self._video_sampler.extract_keyframes(video_path)
+            
+        keyframe_generator = self._video_sampler.extract_keyframes(video_path)
 
-        if not keyframes:
+        frame_results = []
+        max_nsfw_score = 0.0
+        model_info = "untrained"
+        
+        if self._has_custom_image:
+            model_info = "custom-torch"
+        elif self.use_pretrained:
+            model_info = "pretrained-hf"
+
+        processed_count = 0
+        for i, frame_img in enumerate(keyframe_generator):
+            processed_count += 1
+            result = self.predict_image(frame_img)
+            frame_results.append({
+                "frame_index": i,
+                "nsfw_score": result.nsfw_score,
+                "prediction": result.prediction,
+            })
+            max_nsfw_score = max(max_nsfw_score, result.nsfw_score)
+
+        if processed_count == 0:
             return PredictionResult(
                 prediction="REVIEW",
                 confidence=0.0,
@@ -530,27 +551,10 @@ class NSFWPredictor:
                 details={"error": "Could not extract keyframes"},
             )
 
-        frame_results = []
-        max_nsfw_score = 0.0
-        model_info = "untrained"
-        if self._has_custom_image:
-            model_info = "custom-torch"
-        elif self.use_pretrained:
-            model_info = "pretrained-hf"
-
-        for i, frame_img in enumerate(keyframes):
-            result = self.predict_image(frame_img)
-            frame_results.append({
-                "frame_index": i,
-                "nsfw_score": result.nsfw_score,
-                "prediction": result.prediction,
-            })
-            max_nsfw_score = max(max_nsfw_score, result.nsfw_score)
-
         video_result = self._apply_threshold(max_nsfw_score, Modality.VIDEO, model_info)
         video_result.details = {
             "model": model_info,
-            "total_keyframes": len(keyframes),
+            "total_keyframes": processed_count,
             "max_nsfw_score": max_nsfw_score,
             "frame_results": frame_results,
         }

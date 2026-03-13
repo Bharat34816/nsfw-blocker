@@ -10,7 +10,7 @@ Extracts keyframes from videos for classification:
 
 import logging
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Generator, Iterator, List, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -58,25 +58,25 @@ class SceneChangeDetector:
         cv2.normalize(hist, hist, 0, 1, cv2.NORM_MINMAX)
         return hist
 
-    def detect(self, video_path: str) -> List[np.ndarray]:
+    def detect(self, video_path: str) -> Generator[np.ndarray, None, None]:
         """
-        Extract keyframes at scene-change boundaries.
+        Yield keyframes at scene-change boundaries one by one.
 
         Args:
             video_path: Path to the video file.
 
-        Returns:
-            List of keyframe images (as BGR numpy arrays).
+        Yields:
+            Keyframe images (as BGR numpy arrays).
         """
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
             logger.error("Cannot open video: %s", video_path)
-            return []
+            return
 
-        keyframes: List[np.ndarray] = []
         prev_hist = None
         frame_idx = 0
         last_keyframe_idx = -MIN_FRAME_INTERVAL  # ensure first frame is captured
+        yielded_count = 0
 
         while True:
             ret, frame = cap.read()
@@ -87,7 +87,8 @@ class SceneChangeDetector:
 
             if prev_hist is None:
                 # Always capture the first frame
-                keyframes.append(frame.copy())
+                yield frame.copy()
+                yielded_count += 1
                 last_keyframe_idx = frame_idx
             else:
                 # Compare with previous histogram
@@ -99,22 +100,22 @@ class SceneChangeDetector:
                     correlation < self.threshold
                     and (frame_idx - last_keyframe_idx) >= MIN_FRAME_INTERVAL
                 ):
-                    keyframes.append(frame.copy())
+                    yield frame.copy()
+                    yielded_count += 1
                     last_keyframe_idx = frame_idx
 
             prev_hist = curr_hist
             frame_idx += 1
 
-            if len(keyframes) >= MAX_KEYFRAMES:
+            if yielded_count >= MAX_KEYFRAMES:
                 logger.info("Max keyframes (%d) reached", MAX_KEYFRAMES)
                 break
 
         cap.release()
         logger.info(
-            "Scene-change detection: %d keyframes from %d frames (%s)",
-            len(keyframes), frame_idx, video_path,
+            "Scene-change detection: Yielded %d keyframes from %d frames (%s)",
+            yielded_count, frame_idx, video_path,
         )
-        return keyframes
 
 
 # ===========================================================================
@@ -131,20 +132,20 @@ class UniformSampler:
     def __init__(self, target_fps: float = DEFAULT_UNIFORM_FPS):
         self.target_fps = target_fps
 
-    def sample(self, video_path: str) -> List[np.ndarray]:
+    def sample(self, video_path: str) -> Generator[np.ndarray, None, None]:
         """
-        Extract frames at a uniform temporal rate.
+        Yield frames at a uniform temporal rate one by one.
 
         Args:
             video_path: Path to the video file.
 
-        Returns:
-            List of sampled frame images (BGR numpy arrays).
+        Yields:
+            Sampled frame images (BGR numpy arrays).
         """
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
             logger.error("Cannot open video: %s", video_path)
-            return []
+            return
 
         video_fps = cap.get(cv2.CAP_PROP_FPS)
         if video_fps <= 0:
@@ -153,8 +154,8 @@ class UniformSampler:
         # Sample every N-th frame
         sample_interval = max(1, int(video_fps / self.target_fps))
 
-        frames: List[np.ndarray] = []
         frame_idx = 0
+        yielded_count = 0
 
         while True:
             ret, frame = cap.read()
@@ -162,19 +163,19 @@ class UniformSampler:
                 break
 
             if frame_idx % sample_interval == 0:
-                frames.append(frame.copy())
+                yield frame.copy()
+                yielded_count += 1
 
             frame_idx += 1
 
-            if len(frames) >= MAX_KEYFRAMES:
+            if yielded_count >= MAX_KEYFRAMES:
                 break
 
         cap.release()
         logger.info(
-            "Uniform sampling (%.1f FPS): %d frames from %d total (%s)",
-            self.target_fps, len(frames), frame_idx, video_path,
+            "Uniform sampling (%.1f FPS): Yielded %d frames from %d total (%s)",
+            self.target_fps, yielded_count, frame_idx, video_path,
         )
-        return frames
 
 
 # ===========================================================================
@@ -188,8 +189,8 @@ class VideoFrameSampler:
 
     Usage:
         sampler = VideoFrameSampler()
-        frames = sampler.extract_keyframes("video.mp4")
-        # → List of PIL Images ready for the image model
+        for f in sampler.extract_keyframes("video.mp4"):
+            ...
     """
 
     def __init__(
@@ -202,36 +203,62 @@ class VideoFrameSampler:
         self.uniform_sampler = UniformSampler(target_fps=uniform_fps)
         self.min_keyframes = min_keyframes
 
-    def extract_keyframes(self, video_path: str) -> List[Image.Image]:
+    def extract_keyframes(self, video_path: str) -> Generator[Image.Image, None, None]:
         """
-        Extract keyframes from a video file.
+        Yield keyframes from a video file dynamically to minimize memory.
 
         Strategy:
             1. Try scene-change detection
             2. If < min_keyframes found, fall back to uniform sampling
-            3. Convert all frames to PIL Images (RGB)
+            3. Convert all frames to PIL Images (RGB) and resize dynamically
 
         Args:
             video_path: Path to the video file.
 
-        Returns:
-            List of PIL Image objects (RGB).
+        Yields:
+            PIL Image objects (RGB).
         """
-        # Try scene detection first
-        frames = self.scene_detector.detect(video_path)
+        # We need to know if scene detection yielded enough frames.
+        # But we don't want to load all frames into memory to find out.
+        # So we do a fast pass just to count scene changes, without copying frames.
+        scene_count = 0
+        cap = cv2.VideoCapture(video_path)
+        if cap.isOpened():
+            prev_h = None
+            f_idx = 0
+            last_k = -MIN_FRAME_INTERVAL
+            while True:
+                ret, frame = cap.read()
+                if not ret: break
+                
+                # Fast histogram
+                hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+                hist = cv2.calcHist([hsv], [0, 1], None, [50, 60], [0, 180, 0, 256])
+                cv2.normalize(hist, hist, 0, 1, cv2.NORM_MINMAX)
+                
+                if prev_h is None:
+                    scene_count += 1
+                    last_k = f_idx
+                else:
+                    corr = cv2.compareHist(prev_h, hist, cv2.HISTCMP_CORREL)
+                    if corr < self.scene_detector.threshold and (f_idx - last_k) >= MIN_FRAME_INTERVAL:
+                        scene_count += 1
+                        last_k = f_idx
+                prev_h = hist
+                f_idx += 1
+                if scene_count >= MAX_KEYFRAMES: break
+            cap.release()
 
-        if len(frames) < self.min_keyframes:
-            logger.info(
-                "Scene detection yielded %d frames (< %d), "
-                "falling back to uniform sampling",
-                len(frames), self.min_keyframes,
-            )
-            frames = self.uniform_sampler.sample(video_path)
+        use_scene = scene_count >= self.min_keyframes
+        if not use_scene:
+            logger.info("Scene detection yielded %d frames (< %d), falling back to uniform sampling", scene_count, self.min_keyframes)
+
+        generator = self.scene_detector.detect(video_path) if use_scene else self.uniform_sampler.sample(video_path)
 
         # Convert BGR (OpenCV) → RGB (PIL) and resize to save memory
-        pil_images = []
         max_width = 640
-        for frame in frames:
+        yielded_count = 0
+        for frame in generator:
             h, w = frame.shape[:2]
             if w > max_width:
                 scale = max_width / w
@@ -239,10 +266,10 @@ class VideoFrameSampler:
                 frame = cv2.resize(frame, new_size, interpolation=cv2.INTER_AREA)
             
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            pil_images.append(Image.fromarray(rgb))
+            yield Image.fromarray(rgb)
+            yielded_count += 1
 
-        logger.info("Final keyframes: %d (resized to max %dpx) from %s", len(pil_images), max_width, video_path)
-        return pil_images
+        logger.info("Total dynamic keyframes yielded: %d (resized to max %dpx) from %s", yielded_count, max_width, video_path)
 
     @staticmethod
     def get_video_info(video_path: str) -> dict:
