@@ -1,18 +1,15 @@
 import streamlit as st
-import tensorflow as tf
-import numpy as np
 import pickle
 import json
 import re
 import unicodedata
 import emoji
 import html
-from ftfy import fix_text
-from tensorflow.keras.preprocessing.sequence import pad_sequences
 import os
+from ftfy import fix_text
 
 # Custom layer
-from .custom_layers import SelfAttention
+from NsfwContentM_main.custom_layers import SelfAttention
 
 TF_ENABLE_ONEDNN_OPTS=0
 # -----------------------
@@ -30,6 +27,7 @@ METADATA_PATH = os.path.join(BASE_DIR, "models", "metadata.json")
 # -----------------------
 @st.cache_resource
 def load_artifacts():
+    import tensorflow as tf
     model = tf.keras.models.load_model(
         MODEL_PATH,
         custom_objects={"SelfAttention": SelfAttention}
@@ -42,9 +40,6 @@ def load_artifacts():
         metadata = json.load(f)
 
     return model, tokenizer, metadata["max_len"], metadata["class_labels"]
-
-
-model, tokenizer, MAX_LEN, CLASS_LABELS = load_artifacts()
 
 
 # -----------------------
@@ -71,6 +66,10 @@ def preprocess_text(text):
 # Prediction
 # -----------------------
 def predict_text(text):
+    # Load artifacts lazily inside predict_text to save startup memory
+    model, tokenizer, MAX_LEN, CLASS_LABELS = load_artifacts()
+    from tensorflow.keras.preprocessing.sequence import pad_sequences
+
     clean = preprocess_text(text)
 
     seq = tokenizer.texts_to_sequences([clean])
@@ -86,8 +85,8 @@ def predict_text(text):
     nsfw_labels = {"hate", "offensive"}
 
     nsfw_score = max((v for k, v in label_scores.items() if k in nsfw_labels),
-    default=0.0
-)
+        default=0.0
+    )
     sfw_score = sum(v for k, v in label_scores.items() if k not in nsfw_labels)
 
     final_label = "NSFW" if nsfw_score >= sfw_score else "SFW"
@@ -149,4 +148,4 @@ if __name__ == "__main__":
             st.write(f"SFW: {sfw_score:.4f}")
 
             st.write("### Original Class Scores")
-            st.json({k: round(v, 4) for k, v in original_scores.items()})
+            st.json({k: round(float(v), 4) for k, v in original_scores.items()})

@@ -10,19 +10,21 @@ Handles image, video, and text inference with:
     - Lazy model loading with caching
 """
 
+# Imports (Heavy libraries moved inside methods for lazy loading)
 import logging
 import re
 import pickle
 from dataclasses import dataclass, asdict
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Any
 
-import numpy as np
-import torch
-import torch.nn.functional as F
-from PIL import Image
-from torchvision import transforms
+def round_score(val: Any) -> float:
+    """Safe rounding for lint and types."""
+    try:
+        return float(round(float(val), 4))
+    except (ValueError, TypeError):
+        return 0.0
 
 # Add project root to path
 import sys
@@ -42,7 +44,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# DEVICE will be determined lazily
+_DEVICE = None
+
+def get_device():
+    global _DEVICE
+    if _DEVICE is None:
+        import torch
+        _DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    return _DEVICE
 
 
 # ===========================================================================
@@ -154,6 +164,7 @@ class KeywordTextDetector:
     ]
 
     def __init__(self):
+        # re.compile is lightweight enough for init
         self._explicit_re = [re.compile(p, re.IGNORECASE) for p in self.EXPLICIT_PATTERNS]
         self._suggestive_re = [re.compile(p, re.IGNORECASE) for p in self.SUGGESTIVE_PATTERNS]
         self._safe_re = [re.compile(p, re.IGNORECASE) for p in self.SAFE_CONTEXT]
@@ -187,7 +198,7 @@ class KeywordTextDetector:
             reduction = min(0.4, safe_hits * 0.15)
             raw_score = max(0.0, raw_score - reduction)
 
-        return round(raw_score, 4)
+        return round_score(raw_score)
 
 
 # ===========================================================================
@@ -211,6 +222,7 @@ class PretrainedImageClassifier:
             return
 
         try:
+            import torch
             from transformers import pipeline
             logger.info("Loading pre-trained NSFW image classifier: %s", self.MODEL_NAME)
             self._pipeline = pipeline(
@@ -305,20 +317,26 @@ class NSFWPredictor:
         self._external_model = None
         self._external_tokenizer = None
 
-        # Image transform for custom model
-        self._image_transform = transforms.Compose([
-            transforms.Resize((224, 224)),
-            transforms.ToTensor(),
-            transforms.Normalize(
-                mean=[0.485, 0.456, 0.406],
-                std=[0.229, 0.224, 0.225],
-            ),
-        ])
+        # Image transform (Lazy imported when needed)
+        self._image_transform = None
 
         logger.info(
             "Predictor initialized — image(custom:%s, pretrained:%s), text(custom:%s, ext:%s)",
             self._has_custom_image, self.use_pretrained, self._has_custom_text, self._has_external_text,
         )
+
+    def _get_transform(self):
+        if self._image_transform is None:
+            from torchvision import transforms
+            self._image_transform = transforms.Compose([
+                transforms.Resize((224, 224)),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406],
+                    std=[0.229, 0.224, 0.225],
+                ),
+            ])
+        return self._image_transform
 
     # ------------------------------------------------------------------
     # Model Loading
@@ -338,14 +356,15 @@ class NSFWPredictor:
         if not self._has_custom_image:
             return None
 
+        import torch
         model = EfficientNetB0(num_classes=2)
-        checkpoint = torch.load(self.image_model_path, map_location=DEVICE, weights_only=False)
+        checkpoint = torch.load(self.image_model_path, map_location=get_device(), weights_only=False)
         if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
             model.load_state_dict(checkpoint["model_state_dict"])
         else:
             # Assume direct state dict
             model.load_state_dict(checkpoint)
-        model = model.to(DEVICE)
+        model = model.to(get_device())
         model.eval()
         self._custom_image_model = model
         logger.info("Custom image model loaded from %s", self.image_model_path)
@@ -365,14 +384,15 @@ class NSFWPredictor:
         else:
             return None
 
+        import torch
         model = TextCNN_BiLSTM(vocab_size=len(self._vocab), num_classes=2)
-        checkpoint = torch.load(self.text_model_path, map_location=DEVICE, weights_only=False)
+        checkpoint = torch.load(self.text_model_path, map_location=get_device(), weights_only=False)
         if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
             model.load_state_dict(checkpoint["model_state_dict"])
         else:
             # Assume direct state dict
             model.load_state_dict(checkpoint)
-        model = model.to(DEVICE)
+        model = model.to(get_device())
         model.eval()
         self._custom_text_model = model
         logger.info("Custom text model loaded from %s", self.text_model_path)
@@ -437,6 +457,7 @@ class NSFWPredictor:
         Uses pre-trained HuggingFace model by default, or custom
         EfficientNet-B0 if a trained checkpoint exists.
         """
+        from PIL import Image
         if isinstance(image, (str, Path)):
             image = Image.open(image).convert("RGB")
 
@@ -466,16 +487,18 @@ class NSFWPredictor:
         classifier = self._get_pretrained_classifier()
         return classifier.predict(image)
 
-    @torch.no_grad()
-    def _predict_image_custom(self, image: Image.Image) -> float:
+    def _predict_image_custom(self, image) -> float:
         """Classify using custom EfficientNet-B0."""
+        import torch
+        import torch.nn.functional as F
         model = self._load_custom_image_model()
         if model is None:
             return 0.5
 
-        tensor = self._image_transform(image).unsqueeze(0).to(DEVICE)
-        proba = F.softmax(model(tensor), dim=1)
-        return proba[0, 1].item()
+        with torch.no_grad():
+            tensor = self._get_transform()(image).unsqueeze(0).to(get_device())
+            proba = F.softmax(model(tensor), dim=1)
+            return proba[0, 1].item()
 
     # ------------------------------------------------------------------
     # Video Prediction
@@ -573,17 +596,19 @@ class NSFWPredictor:
         }
         return result
 
-    @torch.no_grad()
     def _predict_text_custom(self, text: str) -> float:
         """Classify using custom CNN-BiLSTM."""
+        import torch
+        import torch.nn.functional as F
         model = self._load_custom_text_model()
         if model is None:
             return 0.0
 
-        encoded = self._vocab.encode(text, max_length=256)
-        tensor = torch.tensor([encoded], dtype=torch.long).to(DEVICE)
-        proba = F.softmax(model(tensor), dim=1)
-        return proba[0, 1].item()
+        with torch.no_grad():
+            encoded = self._vocab.encode(text, max_length=256)
+            tensor = torch.tensor([encoded], dtype=torch.long).to(get_device())
+            proba = F.softmax(model(tensor), dim=1)
+            return proba[0, 1].item()
 
     def _load_external_text_model(self):
         """Lazy load the external Keras model and tokenizer."""
@@ -611,6 +636,7 @@ class NSFWPredictor:
             return 0.0
 
         try:
+            import numpy as np
             # Common Keras preprocessing (Tokens + Padding)
             # Optimized preprocessing for Bi-LSTM models
             # Maxlen 50 matches the suspected model architecture observed in metadata

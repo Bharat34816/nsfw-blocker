@@ -31,9 +31,10 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from NsfwContentM_main.app import predict_text
-from PIL import Image, ImageFilter
-from inference.predictor import NSFWPredictor, ThresholdConfig, PredictionResult
+# Heavy imports deferred to reduce startup memory on Streamlit Cloud
+# from NsfwContentM_main.app import predict_text  -- imported inside text tab
+# from PIL import Image, ImageFilter              -- imported inside image tab
+# from inference.predictor import ...             -- imported inside session init
 
 # ---------------------------------------------------------------------------
 # Custom CSS
@@ -251,12 +252,14 @@ st.markdown("""
 
 def get_predictor():
     """Get the predictor instance, re-initializing if needed."""
+    from inference.predictor import NSFWPredictor, ThresholdConfig
     return NSFWPredictor(
         threshold_config=ThresholdConfig(nsfw_threshold=0.85, safe_threshold=0.15)
     )
 
 if "predictor" not in st.session_state:
     with st.spinner("🚀 Initializing NSFW Predictor..."):
+        from inference.predictor import NSFWPredictor, ThresholdConfig
         st.session_state.predictor = NSFWPredictor(
             threshold_config=ThresholdConfig(nsfw_threshold=0.85, safe_threshold=0.15)
         )
@@ -373,6 +376,7 @@ with st.sidebar:
     )
 
     # Update thresholds
+    from inference.predictor import ThresholdConfig
     st.session_state.predictor.threshold = ThresholdConfig(
         nsfw_threshold=nsfw_thresh,
         safe_threshold=safe_thresh,
@@ -437,6 +441,7 @@ with tab_image:
     )
 
     if uploaded_image is not None:
+        from PIL import Image, ImageFilter
         image = Image.open(uploaded_image).convert("RGB")
         
         # We need to predict FIRST to decide whether to blur
@@ -453,6 +458,7 @@ with tab_image:
             
             # Apply blur if NSFW or REVIEW and not revealed
             if (result.prediction in ("NSFW", "REVIEW")) and not reveal_content:
+                from PIL import ImageFilter
                 display_image = image.filter(ImageFilter.GaussianBlur(radius=30))
                 is_blurred = True
             
@@ -522,11 +528,13 @@ with tab_text:
             with st.spinner("📝 Analyzing text..."):
                 start = time.time()
                 # Use the new predict_text function
+                from NsfwContentM_main.app import predict_text
                 clean_text, label, nsfw_score, sfw_score, label_scores = predict_text(text_input.strip())
                 elapsed = (time.time() - start) * 1000
 
                 # Convert to PredictionResult format for UI rendering
                 # Use the PredictionResult format for UI rendering
+                from inference.predictor import PredictionResult
                 result = PredictionResult(
                     prediction=label, # "NSFW" or "SFW" (dashboard handles color coding)
                     confidence=max(nsfw_score, sfw_score),
