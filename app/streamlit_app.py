@@ -33,7 +33,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from NsfwContentM_main.app import predict_text
 from PIL import Image, ImageFilter
-from inference.predictor import NSFWPredictor, ThresholdConfig
+from inference.predictor import NSFWPredictor, ThresholdConfig, PredictionResult
 
 # ---------------------------------------------------------------------------
 # Custom CSS
@@ -202,11 +202,15 @@ st.markdown("""
         padding: 1.5rem;
         margin-bottom: 2rem;
         box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    }
-    section[data-testid="stSidebar"] * {
+    /* Force sidebar text to be black - targeted to avoid breaking internals */
+    section[data-testid="stSidebar"] .stMarkdown p,
+    section[data-testid="stSidebar"] div,
+    section[data-testid="stSidebar"] span,
+    section[data-testid="stSidebar"] label {
         color: #000000 !important;
+        font-weight: 600 !important;
     }
-
+    
     /* File Uploader - Ultimate Visibility */
     .stFileUploader {
         border: 3px dashed #4F46E5 !important;
@@ -252,26 +256,14 @@ def get_predictor():
         threshold_config=ThresholdConfig(nsfw_threshold=0.85, safe_threshold=0.15)
     )
 
-# Force re-initialization if the class changed or user requested it
-if "predictor" not in st.session_state or st.sidebar.button("🔄 Reset Models & Cache", use_container_width=True):
+if "predictor" not in st.session_state:
     with st.spinner("🚀 Initializing NSFW Predictor..."):
-        # Force reload of core modules to pick up code changes
-        import importlib
-        import inference.predictor
-        importlib.reload(inference.predictor)
-        
-        # Clear transformers cache if relevant
-        if "transformers" in sys.modules:
-             import transformers
-             importlib.reload(transformers)
-             
-        # Use the freshly reloaded class
         from inference.predictor import NSFWPredictor
         st.session_state.predictor = NSFWPredictor(
             threshold_config=ThresholdConfig(nsfw_threshold=0.85, safe_threshold=0.15)
         )
         st.session_state.history = []
-        st.toast("Predictor Hard-Reloaded!", icon="🛡️")
+        st.toast("Predictor Initialized!", icon="🛡️")
 
 if "history" not in st.session_state:
     st.session_state.history = []
@@ -343,10 +335,10 @@ def add_to_history(modality: str, result, elapsed_ms: float):
     st.session_state.history.insert(0, {
         "modality": modality,
         "prediction": result.prediction,
-        "nsfw_score": round(result.nsfw_score, 4),
-        "confidence": round(result.confidence, 4),
+        "nsfw_score": float(result.nsfw_score),
+        "confidence": float(result.confidence),
         "needs_review": result.needs_review,
-        "time_ms": round(elapsed_ms, 1),
+        "time_ms": float(elapsed_ms),
     })
     st.session_state.total_scans += 1
     # Keep last 50 entries
@@ -466,7 +458,7 @@ with tab_image:
                 display_image = image.filter(ImageFilter.GaussianBlur(radius=30))
                 is_blurred = True
             
-            st.image(display_image, caption="Uploaded Image" + (" (Blurred for privacy)" if is_blurred else ""), use_column_width=True)
+            st.image(display_image, caption="Uploaded Image" + (" (Blurred for privacy)" if is_blurred else ""), use_container_width=True)
             
             if is_blurred:
                 st.warning("⚠️ This image has been blurred. Use the 'Reveal NSFW content' toggle in the sidebar to view.")
@@ -536,7 +528,7 @@ with tab_text:
                 elapsed = (time.time() - start) * 1000
 
                 # Convert to PredictionResult format for UI rendering
-                from inference.predictor import PredictionResult
+                # Use the PredictionResult format for UI rendering
                 result = PredictionResult(
                     prediction=label, # "NSFW" or "SFW" (dashboard handles color coding)
                     confidence=max(nsfw_score, sfw_score),
