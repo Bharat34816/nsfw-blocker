@@ -10,6 +10,8 @@ Handles image, video, and text inference with:
     - Lazy model loading with caching
 """
 
+from __future__ import annotations
+
 # Imports (Heavy libraries moved inside methods for lazy loading)
 import logging
 import re
