@@ -488,11 +488,13 @@ with tab_video:
         st.video(uploaded_video)
 
         if st.button("🔍 Analyze Video", key="analyze_video"):
-            # Save to temp file for OpenCV
+            # Save to temp file using a memory-safe streaming approach
             with tempfile.NamedTemporaryFile(
                 delete=False, suffix=Path(uploaded_video.name).suffix
             ) as tmp:
-                tmp.write(uploaded_video.getvalue())
+                import shutil
+                uploaded_video.seek(0)
+                shutil.copyfileobj(uploaded_video, tmp)
                 tmp_path = tmp.name
 
             try:
