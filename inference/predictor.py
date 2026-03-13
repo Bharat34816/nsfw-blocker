@@ -30,9 +30,10 @@ def round_score(val: Any) -> float:
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from models.efficientnet_model import EfficientNetB0
-from models.text_model import TextCNN_BiLSTM, Vocabulary
-from training.video_sampler import VideoFrameSampler
+# Model imports moved inside methods to avoid loading torch/cv2 at startup
+# from models.efficientnet_model import EfficientNetB0
+# from models.text_model import TextCNN_BiLSTM, Vocabulary
+# from training.video_sampler import VideoFrameSampler
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -294,12 +295,12 @@ class NSFWPredictor:
         self.use_pretrained = use_pretrained
 
         # Models (lazy-loaded)
-        self._custom_image_model: Optional[EfficientNetB0] = None
-        self._custom_text_model: Optional[TextCNN_BiLSTM] = None
-        self._vocab: Optional[Vocabulary] = None
+        self._custom_image_model = None
+        self._custom_text_model = None
+        self._vocab = None
         self._pretrained_classifier: Optional[PretrainedImageClassifier] = None
         self._text_detector = KeywordTextDetector()
-        self._video_sampler = VideoFrameSampler()
+        self._video_sampler = None  # Lazy loaded
 
         # Check for custom checkpoints
         self._has_custom_image = Path(self.image_model_path).exists()
@@ -357,6 +358,7 @@ class NSFWPredictor:
             return None
 
         import torch
+        from models.efficientnet_model import EfficientNetB0
         model = EfficientNetB0(num_classes=2)
         checkpoint = torch.load(self.image_model_path, map_location=get_device(), weights_only=False)
         if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
@@ -380,11 +382,13 @@ class NSFWPredictor:
 
         vocab_path = Path(self.vocab_path)
         if vocab_path.exists():
+            from models.text_model import Vocabulary
             self._vocab = Vocabulary.load(str(vocab_path))
         else:
             return None
 
         import torch
+        from models.text_model import TextCNN_BiLSTM
         model = TextCNN_BiLSTM(vocab_size=len(self._vocab), num_classes=2)
         checkpoint = torch.load(self.text_model_path, map_location=get_device(), weights_only=False)
         if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
@@ -509,6 +513,9 @@ class NSFWPredictor:
         Predict NSFW status for a video.
         Flags as NSFW if ANY keyframe exceeds threshold.
         """
+        if self._video_sampler is None:
+            from training.video_sampler import VideoFrameSampler
+            self._video_sampler = VideoFrameSampler()
         keyframes = self._video_sampler.extract_keyframes(video_path)
 
         if not keyframes:
