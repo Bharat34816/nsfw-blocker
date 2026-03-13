@@ -257,16 +257,15 @@ def get_predictor():
 
 if "predictor" not in st.session_state:
     with st.spinner("🚀 Initializing NSFW Predictor..."):
-        from inference.predictor import NSFWPredictor
         st.session_state.predictor = NSFWPredictor(
             threshold_config=ThresholdConfig(nsfw_threshold=0.85, safe_threshold=0.15)
         )
         st.session_state.history = []
+        st.session_state.total_scans = 0
         st.toast("Predictor Initialized!", icon="🛡️")
 
 if "history" not in st.session_state:
     st.session_state.history = []
-
 if "total_scans" not in st.session_state:
     st.session_state.total_scans = 0
 
