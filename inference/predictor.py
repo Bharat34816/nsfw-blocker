@@ -300,7 +300,7 @@ class NSFWPredictor:
         self._custom_image_model = None
         self._custom_text_model = None
         self._vocab = None
-        self._pretrained_classifier: Optional[PretrainedImageClassifier] = None
+        self._pretrained_classifier: Optional["PretrainedImageClassifier"] = None
         self._text_detector = KeywordTextDetector()
         self._video_sampler = None  # Lazy loaded
 
@@ -345,13 +345,13 @@ class NSFWPredictor:
     # Model Loading
     # ------------------------------------------------------------------
 
-    def _get_pretrained_classifier(self) -> PretrainedImageClassifier:
+    def _get_pretrained_classifier(self) -> "PretrainedImageClassifier":
         """Get or create the pre-trained classifier."""
         if self._pretrained_classifier is None:
             self._pretrained_classifier = PretrainedImageClassifier()
         return self._pretrained_classifier
 
-    def _load_custom_image_model(self) -> Optional[EfficientNetB0]:
+    def _load_custom_image_model(self) -> Optional["EfficientNetB0"]:
         """Load custom image model if checkpoint exists."""
         if self._custom_image_model is not None:
             return self._custom_image_model
@@ -374,7 +374,7 @@ class NSFWPredictor:
         logger.info("Custom image model loaded from %s", self.image_model_path)
         return model
 
-    def _load_custom_text_model(self) -> Optional[TextCNN_BiLSTM]:
+    def _load_custom_text_model(self) -> Optional["TextCNN_BiLSTM"]:
         """Load custom text model if checkpoint exists."""
         if self._custom_text_model is not None:
             return self._custom_text_model
@@ -488,7 +488,7 @@ class NSFWPredictor:
 
         return self._apply_threshold(nsfw_score, Modality.IMAGE, model_info)
 
-    def _predict_image_pretrained(self, image: Image.Image) -> float:
+    def _predict_image_pretrained(self, image: "Image.Image") -> float:
         """Classify using pre-trained HuggingFace model."""
         classifier = self._get_pretrained_classifier()
         return classifier.predict(image)
