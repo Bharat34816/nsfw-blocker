@@ -41,175 +41,202 @@ from inference.predictor import NSFWPredictor, ThresholdConfig
 
 st.markdown("""
 <style>
-    /* Global */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    /* Global & Typography */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
     .stApp {
         font-family: 'Inter', sans-serif;
         background-color: #FFFFFF;
-        color: #0E1117;
+        color: #000000;
     }
 
-    /* Force all Streamlit labels and captions to be dark */
-    .stMarkdown p, .stCaption, label, .stSlider label, .stToggle label {
-        color: #1a202c !important;
-        font-weight: 500 !important;
+    /* Ultimate Contrast forcing for all labels and text */
+    p, span, label, .stMarkdown, .stCaption, .stSlider label, .stToggle label, [data-testid="stMetricValue"] {
+        color: #000000 !important;
+        font-weight: 600 !important;
     }
 
-    /* Header */
+    h1, h2, h3, h4, h5, h6 {
+        color: #000000 !important;
+        font-weight: 800 !important;
+        letter-spacing: -0.5px;
+    }
+
+    /* Main Header Enhancement */
     .main-header {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        padding: 2.5rem;
-        border-radius: 20px;
-        margin-bottom: 2rem;
+        background: #F8FAFC;
+        padding: 3rem;
+        border-radius: 24px;
+        margin-bottom: 2.5rem;
         text-align: center;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        border: 1px solid #dee2e6;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        border: 2px solid #E2E8F0;
     }
     .main-header h1 {
-        color: #1a1a2e;
-        font-size: 2.8rem;
-        font-weight: 800;
+        font-size: 3.2rem;
         margin: 0;
-        letter-spacing: -1.5px;
+        color: #000000 !important;
     }
     .main-header p {
-        color: #2d3748;
-        font-size: 1.2rem;
-        margin-top: 0.75rem;
-        font-weight: 500;
+        color: #1E293B !important;
+        font-size: 1.3rem;
+        margin-top: 1rem;
+        font-weight: 600 !important;
     }
 
-    /* Result cards */
+    /* Result cards - Ultra Solid */
     .result-card {
-        padding: 1.5rem;
-        border-radius: 16px;
-        margin: 1rem 0;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        padding: 1.8rem;
+        border-radius: 20px;
+        margin: 1.5rem 0;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.12);
     }
     .result-safe {
-        background-color: #f0fff4;
-        border: 2px solid #38a169;
+        background-color: #F0FFF4;
+        border: 3px solid #059669;
     }
     .result-nsfw {
-        background-color: #fff5f5;
-        border: 2px solid #e53e3e;
+        background-color: #FFF5F5;
+        border: 3px solid #DC2626;
     }
     .result-review {
-        background-color: #fffaf0;
-        border: 2px solid #dd6b20;
+        background-color: #FFFAF0;
+        border: 3px solid #D97706;
     }
 
     .result-label {
-        font-size: 1.8rem;
+        font-size: 2rem;
         font-weight: 900;
         margin-bottom: 0.5rem;
     }
     .result-confidence {
-        font-size: 1.1rem;
-        color: #1a202c;
-        font-weight: 600;
+        font-size: 1.2rem;
+        color: #000000 !important;
+        background: rgba(0,0,0,0.04);
+        padding: 0.5rem 1rem;
+        border-radius: 12px;
+        display: inline-block;
     }
 
-    /* Confidence bar */
+    /* Confidence bar - Thicker & Clearer */
     .confidence-bar-container {
-        background: #e2e8f0;
-        border-radius: 12px;
-        height: 14px;
-        margin: 1rem 0 0.5rem 0;
+        background: #E2E8F0;
+        border-radius: 16px;
+        height: 20px;
+        margin: 1.2rem 0;
         overflow: hidden;
-        border: 1px solid #cbd5e0;
+        border: 2px solid #CBD5E1;
     }
     .confidence-bar {
         height: 100%;
-        border-radius: 12px;
-        transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .bar-safe { background-color: #38a169; }
-    .bar-nsfw { background-color: #e53e3e; }
-    .bar-review { background-color: #dd6b20; }
-
-    /* Stat cards */
-    .stat-card {
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
         border-radius: 16px;
-        padding: 1.5rem;
+    }
+    .bar-safe { background-color: #059669; }
+    .bar-nsfw { background-color: #DC2626; }
+    .bar-review { background-color: #D97706; }
+
+    /* Stat cards - Bold & Prominent */
+    .stat-card {
+        background: #FFFFFF;
+        border: 2px solid #E2E8F0;
+        border-radius: 20px;
+        padding: 2rem;
         text-align: center;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     }
     .stat-value {
-        font-size: 2.4rem;
+        font-size: 3rem;
         font-weight: 900;
-        color: #1a202c;
-    }
-    .stat-label {
-        font-size: 0.8rem;
-        color: #4a5568;
-        text-transform: uppercase;
-        letter-spacing: 1.5px;
-        font-weight: 700;
-        margin-top: 0.25rem;
-    }
-
-    /* Review warning */
-    .review-warning {
-        background: #fffaf0;
-        border: 2px solid #ed8936;
-        border-radius: 12px;
-        padding: 1.2rem;
-        margin: 1.5rem 0;
-        color: #744210;
-        font-weight: 500;
-    }
-    .review-warning strong {
-        color: #9c4221;
-        display: block;
-        margin-bottom: 0.25rem;
-        font-size: 1.2rem;
-        font-weight: 800;
-    }
-
-    /* History table */
-    .history-item {
-        padding: 1rem;
-        border-bottom: 1px solid #e2e8f0;
-        font-size: 1rem;
-        color: #1a202c;
-    }
-    .history-item:hover {
-        background-color: #f1f5f9;
-    }
-
-    /* Sidebar styling */
-    .sidebar-section {
-        background: #f8fafc;
-        border: 1px solid #cbd5e0;
-        border-radius: 12px;
-        padding: 1.2rem;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }
-    
-    /* Force sidebar text to be black */
-    section[data-testid="stSidebar"] div, 
-    section[data-testid="stSidebar"] span, 
-    section[data-testid="stSidebar"] label,
-    section[data-testid="stSidebar"] p {
         color: #000000 !important;
     }
+    .stat-label {
+        font-size: 0.9rem;
+        color: #475569 !important;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-top: 0.5rem;
+    }
+
+    /* Native Streamlit Component Overrides */
     
-    /* File uploader custom styling - significantly darkened */
-    .stFileUploader {
+    /* Buttons - Deep & Impactful */
+    div.stButton > button {
+        background-color: #4F46E5 !important;
+        color: white !important;
+        font-weight: 800 !important;
+        border-radius: 12px !important;
+        border: none !important;
+        padding: 0.75rem 1.5rem !important;
+        width: 100%;
+        transition: transform 0.2s ease, background-color 0.2s ease;
+    }
+    div.stButton > button:hover {
+        background-color: #4338CA !important;
+        transform: scale(1.02);
+    }
+
+    /* Tabs - Clear Selection */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 12px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        background-color: #F1F5F9;
+        border-radius: 12px 12px 0 0;
+        padding: 8px 20px;
+        font-weight: 700 !important;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #4F46E5 !important;
+        color: white !important;
+    }
+
+    /* Sidebar - Maximum Depth */
+    section[data-testid="stSidebar"] {
+        background-color: #E2E8F0 !important;
+        border-right: 2px solid #CBD5E1;
+    }
+    .sidebar-section {
+        background: #FFFFFF;
+        border: 2px solid #CBD5E1;
+        border-radius: 16px;
         padding: 1.5rem;
-        background: #f1f5f9;
-        border-radius: 12px;
-        border: 2px dashed #4a5568;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    section[data-testid="stSidebar"] * {
+        color: #000000 !important;
+    }
+
+    /* File Uploader - Ultimate Visibility */
+    .stFileUploader {
+        border: 3px dashed #4F46E5 !important;
+        background: #F1F5F9 !important;
+        padding: 2.5rem !important;
+        border-radius: 20px !important;
+    }
+    .stFileUploader section {
+        background: transparent !important;
     }
     .stFileUploader [data-testid="stMarkdownContainer"] p {
-        color: #1a202c !important;
-        font-weight: 600 !important;
+        font-size: 1.2rem !important;
+        font-weight: 800 !important;
+        color: #000000 !important;
+    }
+
+    /* Inputs & Text Area */
+    .stTextArea textarea {
+        border: 2px solid #CBD5E1 !important;
+        border-radius: 12px !important;
         font-size: 1.1rem !important;
+        font-weight: 500 !important;
+    }
+    
+    /* Metrics Visibility */
+    [data-testid="stMetric"] {
+        background: white;
+        padding: 1rem;
+        border-radius: 16px;
+        border: 2px solid #E2E8F0;
     }
 </style>
 """, unsafe_allow_html=True)
