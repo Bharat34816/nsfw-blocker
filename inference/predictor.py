@@ -236,7 +236,7 @@ class PretrainedImageClassifier:
             logger.error("Failed to load pre-trained classifier: %s", e)
             self._pipeline = None
 
-    def predict(self, image: Image.Image) -> float:
+    def predict(self, image: "Image.Image") -> float:
         """
         Predict NSFW score for an image.
 
@@ -454,7 +454,7 @@ class NSFWPredictor:
     # Image Prediction
     # ------------------------------------------------------------------
 
-    def predict_image(self, image: Union[str, Path, Image.Image]) -> PredictionResult:
+    def predict_image(self, image: Union[str, Path, "Image.Image"]) -> PredictionResult:
         """
         Predict NSFW status for a single image.
 
