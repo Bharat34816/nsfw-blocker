@@ -42,7 +42,6 @@ from inference.predictor import NSFWPredictor, ThresholdConfig, PredictionResult
 st.markdown("""
 <style>
     /* Global & Typography */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
     .stApp {
         font-family: 'Inter', sans-serif;
