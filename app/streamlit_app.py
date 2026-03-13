@@ -46,122 +46,170 @@ st.markdown("""
 
     .stApp {
         font-family: 'Inter', sans-serif;
+        background-color: #FFFFFF;
+        color: #0E1117;
+    }
+
+    /* Force all Streamlit labels and captions to be dark */
+    .stMarkdown p, .stCaption, label, .stSlider label, .stToggle label {
+        color: #1a202c !important;
+        font-weight: 500 !important;
     }
 
     /* Header */
     .main-header {
-        background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-        padding: 2rem 2.5rem;
-        border-radius: 16px;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 2.5rem;
+        border-radius: 20px;
         margin-bottom: 2rem;
         text-align: center;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        border: 1px solid #dee2e6;
     }
     .main-header h1 {
-        color: #ffffff;
-        font-size: 2.2rem;
-        font-weight: 700;
+        color: #1a1a2e;
+        font-size: 2.8rem;
+        font-weight: 800;
         margin: 0;
-        letter-spacing: -0.5px;
+        letter-spacing: -1.5px;
     }
     .main-header p {
-        color: #a8a8d0;
-        font-size: 1rem;
-        margin-top: 0.5rem;
+        color: #2d3748;
+        font-size: 1.2rem;
+        margin-top: 0.75rem;
+        font-weight: 500;
     }
 
     /* Result cards */
     .result-card {
         padding: 1.5rem;
-        border-radius: 14px;
+        border-radius: 16px;
         margin: 1rem 0;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     }
     .result-safe {
-        background: linear-gradient(135deg, #0d3b0d, #1a5c1a);
-        border: 1px solid #2ecc71;
+        background-color: #f0fff4;
+        border: 2px solid #38a169;
     }
     .result-nsfw {
-        background: linear-gradient(135deg, #3b0d0d, #5c1a1a);
-        border: 1px solid #e74c3c;
+        background-color: #fff5f5;
+        border: 2px solid #e53e3e;
     }
     .result-review {
-        background: linear-gradient(135deg, #3b2f0d, #5c4a1a);
-        border: 1px solid #f39c12;
+        background-color: #fffaf0;
+        border: 2px solid #dd6b20;
     }
 
     .result-label {
-        font-size: 1.5rem;
-        font-weight: 700;
+        font-size: 1.8rem;
+        font-weight: 900;
         margin-bottom: 0.5rem;
     }
     .result-confidence {
         font-size: 1.1rem;
-        color: #cccccc;
+        color: #1a202c;
+        font-weight: 600;
     }
 
     /* Confidence bar */
     .confidence-bar-container {
-        background: rgba(255,255,255,0.1);
+        background: #e2e8f0;
         border-radius: 12px;
-        height: 24px;
-        margin: 0.75rem 0;
+        height: 14px;
+        margin: 1rem 0 0.5rem 0;
         overflow: hidden;
+        border: 1px solid #cbd5e0;
     }
     .confidence-bar {
         height: 100%;
         border-radius: 12px;
-        transition: width 0.8s ease;
+        transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .bar-safe { background: linear-gradient(90deg, #27ae60, #2ecc71); }
-    .bar-nsfw { background: linear-gradient(90deg, #c0392b, #e74c3c); }
-    .bar-review { background: linear-gradient(90deg, #e67e22, #f39c12); }
+    .bar-safe { background-color: #38a169; }
+    .bar-nsfw { background-color: #e53e3e; }
+    .bar-review { background-color: #dd6b20; }
 
     /* Stat cards */
     .stat-card {
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 12px;
-        padding: 1.2rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 1.5rem;
         text-align: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
     }
     .stat-value {
-        font-size: 2rem;
-        font-weight: 700;
+        font-size: 2.4rem;
+        font-weight: 900;
+        color: #1a202c;
     }
     .stat-label {
-        font-size: 0.85rem;
-        color: #888;
+        font-size: 0.8rem;
+        color: #4a5568;
         text-transform: uppercase;
-        letter-spacing: 1px;
+        letter-spacing: 1.5px;
+        font-weight: 700;
+        margin-top: 0.25rem;
     }
 
     /* Review warning */
     .review-warning {
-        background: rgba(243, 156, 18, 0.15);
-        border: 1px solid rgba(243, 156, 18, 0.4);
-        border-radius: 10px;
-        padding: 1rem 1.2rem;
-        margin: 1rem 0;
+        background: #fffaf0;
+        border: 2px solid #ed8936;
+        border-radius: 12px;
+        padding: 1.2rem;
+        margin: 1.5rem 0;
+        color: #744210;
+        font-weight: 500;
     }
     .review-warning strong {
-        color: #f39c12;
+        color: #9c4221;
+        display: block;
+        margin-bottom: 0.25rem;
+        font-size: 1.2rem;
+        font-weight: 800;
     }
 
     /* History table */
     .history-item {
-        padding: 0.6rem 1rem;
-        border-bottom: 1px solid rgba(255,255,255,0.05);
-        font-size: 0.9rem;
+        padding: 1rem;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 1rem;
+        color: #1a202c;
+    }
+    .history-item:hover {
+        background-color: #f1f5f9;
     }
 
     /* Sidebar styling */
     .sidebar-section {
-        background: rgba(255,255,255,0.03);
-        border-radius: 10px;
-        padding: 1rem;
-        margin-bottom: 1rem;
+        background: #f8fafc;
+        border: 1px solid #cbd5e0;
+        border-radius: 12px;
+        padding: 1.2rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    /* Force sidebar text to be black */
+    section[data-testid="stSidebar"] div, 
+    section[data-testid="stSidebar"] span, 
+    section[data-testid="stSidebar"] label,
+    section[data-testid="stSidebar"] p {
+        color: #000000 !important;
+    }
+    
+    /* File uploader custom styling - significantly darkened */
+    .stFileUploader {
+        padding: 1.5rem;
+        background: #f1f5f9;
+        border-radius: 12px;
+        border: 2px dashed #4a5568;
+    }
+    .stFileUploader [data-testid="stMarkdownContainer"] p {
+        color: #1a202c !important;
+        font-weight: 600 !important;
+        font-size: 1.1rem !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -217,13 +265,13 @@ def render_result(result, elapsed_ms: float):
 
     if pred == "SAFE":
         card_class, bar_class, emoji = "result-safe", "bar-safe", "✅"
-        color = "#2ecc71"
+        color = "#2f855a" # Darker green for text readability
     elif pred == "NSFW":
         card_class, bar_class, emoji = "result-nsfw", "bar-nsfw", "🚫"
-        color = "#e74c3c"
+        color = "#c53030" # Darker red for text readability
     else:
         card_class, bar_class, emoji = "result-review", "bar-review", "⚠️"
-        color = "#f39c12"
+        color = "#b7791f" # Darker orange for text readability
 
     # Get model info for badge
     model_name = result.details.get("model", "unknown") if result.details else "unknown"
@@ -235,12 +283,12 @@ def render_result(result, elapsed_ms: float):
         <div class="result-label" style="color: {color}; margin: 0;">
             {emoji} {pred}
         </div>
-        <span style="font-size: 0.7rem; background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px; color: #888;">
+        <span style="font-size: 0.7rem; background: rgba(0,0,0,0.05); padding: 2px 8px; border-radius: 10px; color: #718096; font-weight: 600;">
             MODEL: {model_name.upper()}
         </span>
     </div>
     <div class="result-confidence" style="margin-top: 0.5rem;">
-        NSFW Score: {score:.1%} &nbsp;|&nbsp; Confidence: {conf:.1%} &nbsp;|&nbsp; ⏱ {elapsed_ms:.0f}ms
+        NSFW Score: <strong>{score:.1%}</strong> &nbsp;|&nbsp; Confidence: <strong>{conf:.1%}</strong> &nbsp;|&nbsp; ⏱ {elapsed_ms:.0f}ms
     </div>
     {f'<div style="font-size: 0.8rem; color: #f39c12; margin-top: 0.2rem;">{note}</div>' if note else ''}
     <div class="confidence-bar-container">

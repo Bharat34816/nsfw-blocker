@@ -36,9 +36,7 @@ SAFE_SUBREDDITS = [
     "NaturePics", "aww", "pics", "itookapicture",
 ]
 NSFW_SUBREDDITS = [
-    # Populate with age-verified, ToS-compliant NSFW subreddits
-    # Example placeholders (replace with real subreddits):
-    # "nsfw_subreddit_1", "nsfw_subreddit_2",
+    "nsfw", "gonewild", "RealGirls"
 ]
 
 FLICKR_SAFE_TAGS = ["landscape", "architecture", "food", "nature", "city"]
@@ -357,7 +355,7 @@ def main():
     # --- Reddit ---
     reddit_scraper = RedditImageScraper(
         output_dir="data",
-        images_per_subreddit=500,
+        images_per_subreddit=10,
         rate_limit_seconds=2.0,
     )
     reddit_stats = reddit_scraper.run()
