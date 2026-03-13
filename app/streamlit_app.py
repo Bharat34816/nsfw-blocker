@@ -499,14 +499,19 @@ with tab_video:
                 tmp_path = tmp.name
 
             try:
-                with st.spinner("🎬 Extracting keyframes and analyzing..."):
-                    start = time.time()
-                    result = st.session_state.predictor.predict_video(tmp_path)
-                    elapsed = (time.time() - start) * 1000
+                try:
+                    with st.spinner("🎬 Extracting keyframes and analyzing..."):
+                        start = time.time()
+                        result = st.session_state.predictor.predict_video(tmp_path)
+                        elapsed = (time.time() - start) * 1000
 
-                render_result(result, elapsed)
-                add_to_history("🎥 Video", result, elapsed)
-
+                    render_result(result, elapsed)
+                    add_to_history("🎥 Video", result, elapsed)
+                except Exception as e:
+                    import traceback
+                    st.error("An error occurred during video analysis. See traceback below.")
+                    st.exception(e)
+                    st.code(traceback.format_exc(), language="python")
             finally:
                 if os.path.exists(tmp_path):
                     os.unlink(tmp_path)
