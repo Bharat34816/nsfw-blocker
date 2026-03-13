@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_SCENE_THRESHOLD = 0.4   # Histogram difference threshold for scene change
 DEFAULT_UNIFORM_FPS = 1.0       # Frames per second for uniform sampling
-MAX_KEYFRAMES = 30              # Cap to avoid processing extremely long videos
+MAX_KEYFRAMES = 20              # Cap to avoid processing extremely long videos
 MIN_FRAME_INTERVAL = 10         # Minimum frames between keyframes
 
 
@@ -228,13 +228,20 @@ class VideoFrameSampler:
             )
             frames = self.uniform_sampler.sample(video_path)
 
-        # Convert BGR (OpenCV) → RGB (PIL)
+        # Convert BGR (OpenCV) → RGB (PIL) and resize to save memory
         pil_images = []
+        max_width = 640
         for frame in frames:
+            h, w = frame.shape[:2]
+            if w > max_width:
+                scale = max_width / w
+                new_size = (max_width, int(h * scale))
+                frame = cv2.resize(frame, new_size, interpolation=cv2.INTER_AREA)
+            
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             pil_images.append(Image.fromarray(rgb))
 
-        logger.info("Final keyframes: %d from %s", len(pil_images), video_path)
+        logger.info("Final keyframes: %d (resized to max %dpx) from %s", len(pil_images), max_width, video_path)
         return pil_images
 
     @staticmethod
