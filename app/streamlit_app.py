@@ -396,7 +396,7 @@ with st.sidebar:
         st.metric("Flagged", flagged)
 
     # Clear history
-    if st.button("🗑️ Clear History", use_container_width=True):
+    if st.button("🗑️ Clear History"):
         st.session_state.history = []
         st.session_state.total_scans = 0
         st.rerun()
@@ -462,7 +462,7 @@ with tab_image:
                 display_image = image.filter(ImageFilter.GaussianBlur(radius=30))
                 is_blurred = True
             
-            st.image(display_image, caption="Uploaded Image" + (" (Blurred for privacy)" if is_blurred else ""), use_container_width=True)
+            st.image(display_image, caption="Uploaded Image" + (" (Blurred for privacy)" if is_blurred else ""), use_column_width=True)
             
             if is_blurred:
                 st.warning("⚠️ This image has been blurred. Use the 'Reveal NSFW content' toggle in the sidebar to view.")
@@ -490,7 +490,7 @@ with tab_video:
     if uploaded_video is not None:
         st.video(uploaded_video)
 
-        if st.button("🔍 Analyze Video", key="analyze_video", use_container_width=True):
+        if st.button("🔍 Analyze Video", key="analyze_video"):
             # Save to temp file for OpenCV
             with tempfile.NamedTemporaryFile(
                 delete=False, suffix=Path(uploaded_video.name).suffix
@@ -523,7 +523,7 @@ with tab_text:
         key="text_input",
     )
 
-    if st.button("🔍 Analyze Text", key="analyze_text", use_container_width=True):
+    if st.button("🔍 Analyze Text", key="analyze_text"):
         if text_input and text_input.strip():
             with st.spinner("📝 Analyzing text..."):
                 start = time.time()
